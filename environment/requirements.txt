@@ -1,0 +1,25 @@
+numpy>=1.26
+pandas>=2.1
+tifffile>=2024.1
+matplotlib>=3.8
+scipy>=1.11
+statsmodels>=0.14
+pyarrow>=14.0
+openpyxl>=3.1
+tqdm>=4.66
+Pillow>=10.0
+glymur>=0.12
+opencv-python>=4.8
+plyfile>=1.0
+requests>=2.31
+
+# Hyperspectral index pipeline (analysis/hyperspectral)
+hyperio @ git+https://github.com/unklar/hyperio
+torch>=2.0
+rasterio>=1.4.0
+spectral>=0.23
+scikit-image>=0.22
+
+# 3D point-cloud viewer (analysis/combined/3d_viewer.py)
+open3d>=0.18
+imagecodecs>=2023.1.23

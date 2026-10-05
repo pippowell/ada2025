@@ -1,0 +1,41 @@
+# Dataset files — not tracked (download separately via dataset card),
+# except the small generated/quality-checked files the analysis pipeline depends on
+# directly and that aren't part of the raw sensor/imagery download.
+data/*
+!data/results_w5_mean_15_sa.xlsx
+!data/06_26_quality_check.json
+
+# Generated figure/output files
+analysis/figures/
+paper/results_multimodal.pdf
+paper/results_multimodal.png
+analysis/leaf_air_temp/thermal_analysis.json
+analysis/leaf_air_temp/thermal_plot.png
+analysis/combined/processed/
+
+# Background-sensitivity check — keep directory structure, ignore generated outputs
+analysis/background_sensitivity/processed/*
+!analysis/background_sensitivity/processed/.gitkeep
+
+# Input data and assets for paper figure scripts (large files not tracked)
+paper/plant_height/
+
+# Keep directory structure, ignore generated outputs
+analysis/plant_height/processed/*
+!analysis/plant_height/processed/.gitkeep
+
+analysis/plant_height/figures/*
+!analysis/plant_height/figures/.gitkeep
+
+analysis/plant_height/models/*
+!analysis/plant_height/models/.gitkeep
+
+# Hyperspectral index pipeline — keep directory structure, ignore generated outputs
+analysis/hyperspectral/processed/*
+!analysis/hyperspectral/processed/.gitkeep
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/

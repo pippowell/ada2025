@@ -1,0 +1,34 @@
+name: ada2025
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy>=1.26
+  - pandas>=2.1
+  - tifffile>=2024.1
+  - matplotlib>=3.8
+  - scipy>=1.11
+  - statsmodels>=0.14
+  - pyarrow>=14.0
+  - openpyxl>=3.1
+  - tqdm>=4.66
+  - pillow>=10.0
+  - glymur>=0.12
+  - opencv>=4.8
+  - plyfile>=1.0
+  - requests>=2.31
+  # Hyperspectral index pipeline (analysis/hyperspectral) — plant-masking model
+  - pytorch>=2.0
+  - rasterio>=1.4
+  # conda-forge ships GDAL's JPEG2000 driver as a separate plugin; without it
+  # rasterio/hyperio cannot open the hsi_*.jp2 cubes
+  - libgdal-jp2openjpeg
+  - spectral>=0.23
+  - scikit-image>=0.22
+  # hyperio (published library) is installed via pip
+  - pip:
+    - hyperio @ git+https://github.com/unklar/hyperio
+    # 3D point-cloud viewer (analysis/combined/3d_viewer.py)
+    - open3d>=0.18
+    - imagecodecs>=2023.1.23
