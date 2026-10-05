@@ -123,35 +123,6 @@ python analysis/combined/3d_viewer.py                       # interactive select
 python analysis/combined/3d_viewer.py --plant-id W1_A2 --date 2025_09_01 --hour 15
 ```
 
-## Things to Watch Out For
-
-The full list of known issues is in [docs/data_notes.md](docs/data_notes.md). The main points:
-
-**Acquisition and missing data**
-- **Different frame counts per camera, by design.** Each plant and run has 15 RGB, 15 depth, 5 thermal and 1 hyperspectral image (a whole push-broom scan is one capture). Different file counts per modality in a run folder do not mean missing data.
-- **Missing runs.** About 6.44 % of the planned camera data (five scheduled runs a day, all 216 plants) could not be collected because of robot or camera problems. A run is usually missing for a whole bed and modality at once; [docs/data_notes.md](docs/data_notes.md) lists every affected date, slot, bed and modality. Two larger gaps: depth is missing from September 19, 15 h, to the end, and the last day (September 22) has only the 06 and 09 h runs.
-- **Re-runs at off-schedule hours.** When a scheduled run failed, the robot was often re-run shortly afterwards, so run folders also exist for hours like `07`, `13` or `16`. The hour folder is the local start hour (Europe/Berlin) of the run. Treat a re-run within ±1 h as standing in for the scheduled run (the 6.44 % already does; without re-runs it is 8.5 %). Selecting only the scheduled hours drops these runs. The water-deficit beds `W2` and `W3` have more of these runs than the control bed `W1` (depending on the modality, about 15 to 50 more per plant), often complete flyovers starting at :03 of the following hour (e.g. 07 h), so the `W1` archives are smaller.
-- **Timestamps.** `frames_<sensor>.csv` uses Unix epoch nanoseconds, `hsi_000.json` Unix epoch seconds, and the parquet files carry both `berlin_timestamp` and `utc_timestamp`. The data spans the CEST period only.
-
-**Image quality and geometry**
-- **Dark images.** RGB and hyperspectral images from the early and late runs (06 and 18 h and re-runs near them) are often dark, depending on date and weather.
-- **Hyperspectral overexposure.** The hyperspectral exposure is set automatically once per run when the sensor starts, so a change in lighting later in the run can overexpose images.
-- **Images are not pixel-registered.** The cameras sit side by side, so the same plant appears at different positions in each modality. Depth, RGB and thermal can be aligned through the calibration ([docs/camera_calibration.md](docs/camera_calibration.md)); the hyperspectral camera is not part of that calibration, and no markers or ground control points were used.
-- **Robot positions.** The per-frame robot positions in `frames_<sensor>.csv` are off in places, which shows up as an offset between modalities in the fused point clouds. Some RGB and depth folders from 2025-08-29 and 2025-09-15 have no `frames_*.csv`.
-- **Background changes over time.** The plants outgrow their ~10 cm pots by about BBCH 12-14 and then overlap the pot rim, the soil and their neighbours, and the background itself heats and dries under water deficit. Segmentation should not rely on a fixed background. `analysis/background_sensitivity/` shows how the background affects each modality's signal.
-
-**Raw values and units**
-- **Hyperspectral cubes are raw** (`uint8` digital numbers, 256 x 256 pixels x 300 bands, read with [hyperio](https://github.com/unklar/hyperio)). Convert them to reflectance with the flat-field correction `C = (R - D) / (W * m - D)`: the gray reference `W` is stored per plant row and run in each `hsi_000.json`, the dark reference `D` is `analysis/hyperspectral/black_reference.npy`, and `m = 2.0`. See [analysis/hyperspectral/README.md](analysis/hyperspectral/README.md).
-- **Depth TIFFs have two pages**: page 0 is depth in meters (float32), page 1 the NIR intensity (uint16). Thermal TIFFs hold temperature in °C (float32).
-- **Turgor readings are inverted**: a higher `turgic_value` means lower turgor, i.e. more water-deficit stress. The values are raw sensor units, and the clips were attached on September 2.
-- **PAR is raw** sensor output in mV, without conversion to µmol m⁻² s⁻¹.
-- **Soil readings are not usable.** The soil sensors proved unsuitable for the deployment conditions; the file is included for completeness.
-
-**Metadata and ground truth**
-- **RWC samples come from `W3` only.** Each plant was sampled once: one leaf from each of eight plants per sampling day, except on day 12 (September 15), when seven plants gave two leaves each (`<plant>_1` the smallest fully extended leaf, `<plant>_2` the next youngest). The plants and dates are in the RWC sheet. Sampled plants have no BBCH estimate after their sampling date, so keep this in mind when using `W3` imagery from September 4 on. The `rwc` column is empty: compute RWC = (fw - dw) / (sw - dw).
-- **Dates in the metadata workbook are day first** (D.M.Y). `metadata_rwc_par_en.xlsx` is the English version of `metadata_rwc_par.xlsx`, with the same sheets.
-- **Air sensor positions.** Sensor `1` is at `W3` and sensor `2` at `W1`; there is no air sensor at `W2`.
-
 ## Replicating the Paper Results
 
 The exemplary analyses in the paper use a small, fixed part of the dataset:
@@ -264,6 +235,36 @@ With the steps above you should get the numbers reported in the paper (treatment
 | SIPI (OLS, W2:day) | +0.0143/day (p = 1.83e-6) |
 | Leaf-air temperature (OLS, W2:day) | +0.596 °C/day (p = 0.030) |
 | Spearman with turgor (W2, 12 days) | NDVI ρ = -0.930, CI Red Edge ρ = -0.860, SIPI ρ = 0.944, leaf-air ρ = 0.853 |
+
+## Things to Watch Out For
+
+The full list of known issues is in [docs/data_notes.md](docs/data_notes.md). The main points:
+
+**Acquisition and missing data**
+- **Different frame counts per camera, by design.** Each plant and run has 15 RGB, 15 depth, 5 thermal and 1 hyperspectral image (a whole push-broom scan is one capture). Different file counts per modality in a run folder do not mean missing data.
+- **Missing runs.** About 6.44 % of the planned camera data (five scheduled runs a day, all 216 plants) could not be collected because of robot or camera problems. A run is usually missing for a whole bed and modality at once; [docs/data_notes.md](docs/data_notes.md) lists every affected date, slot, bed and modality. Two larger gaps: depth is missing from September 19, 15 h, to the end, and the last day (September 22) has only the 06 and 09 h runs.
+- **Re-runs at off-schedule hours.** When a scheduled run failed, the robot was often re-run shortly afterwards, so run folders also exist for hours like `07`, `13` or `16`. The hour folder is the local start hour (Europe/Berlin) of the run. Treat a re-run within ±1 h as standing in for the scheduled run (the 6.44 % already does; without re-runs it is 8.5 %). Selecting only the scheduled hours drops these runs. The water-deficit beds `W2` and `W3` have more of these runs than the control bed `W1` (depending on the modality, about 15 to 50 more per plant), often complete flyovers starting at :03 of the following hour (e.g. 07 h), so the `W1` archives are smaller.
+- **Timestamps.** `frames_<sensor>.csv` uses Unix epoch nanoseconds, `hsi_000.json` Unix epoch seconds, and the parquet files carry both `berlin_timestamp` and `utc_timestamp`. The data spans the CEST period only.
+
+**Image quality and geometry**
+- **A plant folder is a grid position, not an isolated plant.** Each plant folder holds the captures from the robot's stop over that pot's grid position (e.g. `W2_J5`). The images are centred on that plant, but because of the bed layout neighbouring pots and plants are always in view, from the first day on; as the plants grow, their leaves also start to overlap. Isolating the named plant needs segmentation.
+- **Dark images.** RGB and hyperspectral images from the early and late runs (06 and 18 h and re-runs near them) are often dark, depending on date and weather.
+- **Hyperspectral overexposure.** The hyperspectral exposure is set automatically once per run when the sensor starts, so a change in lighting later in the run can overexpose images.
+- **Images are not pixel-registered.** The cameras sit side by side, so the same plant appears at different positions in each modality. Depth, RGB and thermal can be aligned through the calibration ([docs/camera_calibration.md](docs/camera_calibration.md)); the hyperspectral camera is not part of that calibration, and no markers or ground control points were used.
+- **Robot positions.** The per-frame robot positions in `frames_<sensor>.csv` are off in places, which shows up as an offset between modalities in the fused point clouds. Some RGB and depth folders from 2025-08-29 and 2025-09-15 have no `frames_*.csv`.
+- **Background changes over time.** The plants outgrow their ~10 cm pots by about BBCH 12-14 and then overlap the pot rim, the soil and their neighbours, and the background itself heats and dries under water deficit. Segmentation should not rely on a fixed background. `analysis/background_sensitivity/` shows how the background affects each modality's signal.
+
+**Raw values and units**
+- **Hyperspectral cubes are raw** (`uint8` digital numbers, 256 x 256 pixels x 300 bands, read with [hyperio](https://github.com/unklar/hyperio)). Convert them to reflectance with the flat-field correction `C = (R - D) / (W * m - D)`: the gray reference `W` is stored per plant row and run in each `hsi_000.json`, the dark reference `D` is `analysis/hyperspectral/black_reference.npy`, and `m = 2.0`. See [analysis/hyperspectral/README.md](analysis/hyperspectral/README.md).
+- **Depth TIFFs have two pages**: page 0 is depth in meters (float32), page 1 the NIR intensity (uint16). Thermal TIFFs hold temperature in °C (float32).
+- **Turgor readings are inverted**: a higher `turgic_value` means lower turgor, i.e. more water-deficit stress. The values are raw sensor units, and the clips were attached on September 2.
+- **PAR is raw** sensor output in mV, without conversion to µmol m⁻² s⁻¹.
+- **Soil readings are not usable.** The soil sensors proved unsuitable for the deployment conditions; the file is included for completeness.
+
+**Metadata and ground truth**
+- **RWC samples come from `W3` only.** Each plant was sampled once: one leaf from each of eight plants per sampling day, except on day 12 (September 15), when seven plants gave two leaves each (`<plant>_1` the smallest fully extended leaf, `<plant>_2` the next youngest). The plants and dates are in the RWC sheet. Sampled plants have no BBCH estimate after their sampling date, so keep this in mind when using `W3` imagery from September 4 on. The `rwc` column is empty: compute RWC = (fw - dw) / (sw - dw).
+- **Dates in the metadata workbook are day first** (D.M.Y). `metadata_rwc_par_en.xlsx` is the English version of `metadata_rwc_par.xlsx`, with the same sheets.
+- **Air sensor positions.** Sensor `1` is at `W3` and sensor `2` at `W1`; there is no air sensor at `W2`.
 
 ## Known Gaps
 

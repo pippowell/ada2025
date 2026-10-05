@@ -8,7 +8,11 @@ columns of each file. Known data issues are listed in
 
 Beds: `W1` is the control bed, `W2` and `W3` are the water-deficit beds.
 Plants are named by bed and grid position, e.g. `W2_J5` (row letter `A`-`R`,
-column `1`-`8`, checkerboard pattern, 72 plants per bed).
+column `1`-`8`, checkerboard pattern, 72 plants per bed). Each plant has its
+own pot, so the plant ID is also its location: a `<bed>_<plant>` folder holds
+the captures from the robot's stop over that grid position. The images are
+centred on the named plant, but neighbouring pots and plants are always in
+view, and the leaves start to overlap as the plants grow.
 
 ## Camera data
 
