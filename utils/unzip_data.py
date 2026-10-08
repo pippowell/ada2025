@@ -1,12 +1,12 @@
 """
 Unzipper for the ADA-2025 camera data archives.
 
-The camera data is published as one archive per modality and bed, e.g.
-hsi/hsi_W1.zip, as written by download_dataset.py:
+The camera data is published as one archive per modality and plant, e.g.
+hsi/hsi_W1_A2.zip, as written by download_dataset.py:
 
-    {data_dir}/{modality}/{modality}_{bed}.zip
+    {data_dir}/{modality}/{modality}_{bed}_{plant}.zip
 
-Each archive holds the plant folders of that bed:
+Each archive holds the folder of its plant:
 
     W1_A2/2025_09_01/15/hsi_000.jp2
 
@@ -33,7 +33,6 @@ import os
 import re
 import sys
 import zipfile
-from collections import defaultdict
 from pathlib import Path
 
 try:
@@ -53,32 +52,32 @@ PLANT_DIR_RE = re.compile(r"^(W\d)_([A-Z]\d+)$")
 # Discovery
 # ---------------------------------------------------------------------------
 
-def index_archives(data_dir: Path) -> dict[tuple[str, str, str], list[tuple[Path, list[zipfile.ZipInfo]]]]:
+def index_archives(data_dir: Path) -> dict[tuple[str, str, str], tuple[Path, list[zipfile.ZipInfo]]]:
     """
     Read the entry lists of all archives under {data_dir}/{modality}/.
 
-    Returns {(modality, bed, plant): [(zip_path, [entries]), ...]}. Archives are
-    grouped by their content, not their file name.
+    Returns {(modality, bed, plant): (zip_path, [entries])}. Each archive holds
+    one plant folder; the plant is read from the entries, not the file name.
     """
-    index: dict[tuple[str, str, str], list] = defaultdict(list)
+    index: dict[tuple[str, str, str], tuple[Path, list[zipfile.ZipInfo]]] = {}
     for mod in MODALITIES:
         mod_dir = data_dir / mod
         if not mod_dir.is_dir():
             continue
         for zip_path in sorted(mod_dir.glob("*.zip")):
-            per_plant: dict[tuple[str, str], list[zipfile.ZipInfo]] = defaultdict(list)
             with zipfile.ZipFile(zip_path) as zf:
-                for info in zf.infolist():
-                    if info.is_dir():
-                        continue
-                    top = info.filename.split("/", 1)[0]
-                    m = PLANT_DIR_RE.match(top)
-                    if not m or ".." in info.filename.split("/"):
-                        print(f"  [WARNING] {zip_path.name}: skipping unexpected entry {info.filename}")
-                        continue
-                    per_plant[(m.group(1), m.group(2))].append(info)
-            for (bed, plant), entries in per_plant.items():
-                index[(mod, bed, plant)].append((zip_path, entries))
+                entries = [i for i in zf.infolist() if not i.is_dir()]
+            tops = {e.filename.split("/", 1)[0] for e in entries}
+            m = PLANT_DIR_RE.match(next(iter(tops))) if len(tops) == 1 else None
+            if not m or any(".." in e.filename.split("/") for e in entries):
+                print(f"  [WARNING] {zip_path.name}: not a single <bed>_<plant>/ folder, skipped")
+                continue
+            key = (mod, m.group(1), m.group(2))
+            if key in index:
+                print(f"  [WARNING] {zip_path.name}: {mod}/{m.group(0)} is already in "
+                      f"{index[key][0].name}, skipped")
+                continue
+            index[key] = (zip_path, entries)
     return index
 
 
@@ -253,17 +252,17 @@ def main():
     for mod in sel_modalities:
         for bed in sel_beds:
             for plant in sel_plants:
-                sources = index.get((mod, bed, plant))
-                if sources:
-                    jobs.append((mod, bed, plant, sources))
+                source = index.get((mod, bed, plant))
+                if source:
+                    jobs.append((mod, bed, plant, *source))
                 else:
                     missing.append(f"{mod}/{bed}_{plant}")
 
     # --- Confirmation ----------------------------------------------------
     if interactive:
         _clear()
-    n_files = sum(len(e) for *_, sources in jobs for _, e in sources)
-    n_bytes = sum(i.file_size for *_, sources in jobs for _, e in sources for i in e)
+    n_files = sum(len(entries) for *_, entries in jobs)
+    n_bytes = sum(i.file_size for *_, entries in jobs for i in entries)
     print(f"\n  Ready to extract {len(jobs)} modality/plant combination(s), "
           f"{n_files:,} files, {n_bytes / 1e9:.1f} GB.")
     print(f"  Modalities : {', '.join(sel_modalities)}")
@@ -285,14 +284,13 @@ def main():
 
     # --- Extract ---------------------------------------------------------
     errors: list[tuple[str, str]] = []
-    for mod, bed, plant, sources in jobs:
+    for mod, bed, plant, zip_path, entries in jobs:
         label = f"{mod}/{bed}_{plant}"
-        for zip_path, entries in sources:
-            try:
-                extract_entries(zip_path, entries, data_dir / mod, label)
-            except Exception as exc:
-                errors.append((f"{zip_path} ({label})", str(exc)))
-                print(f"    [ERROR] {zip_path.name} ({label}): {exc}")
+        try:
+            extract_entries(zip_path, entries, data_dir / mod, label)
+        except Exception as exc:
+            errors.append((f"{zip_path} ({label})", str(exc)))
+            print(f"    [ERROR] {zip_path.name} ({label}): {exc}")
 
     # --- Summary ---------------------------------------------------------
     print("\n  " + "=" * 62)

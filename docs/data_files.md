@@ -16,10 +16,11 @@ view, and the leaves start to overlap as the plants grow.
 
 ## Camera data
 
-The camera data is published as one archive per modality and bed
-(`rgb_W1.zip`, `thermal_W2.zip`, ...; 12 archives). `utils/download_dataset.py`
-puts them in `data/<modality>/` (or under `--data-dir`), and `utils/unzip_data.py`
-extracts the selected beds and plants next to them:
+The camera data is published as one archive per modality and plant
+(`rgb_W1_A2.zip`, `thermal_W2_J5.zip`, ...; 216 per modality, 864 in all).
+`utils/download_dataset.py` puts the selected ones in `data/<modality>/` (or
+under `--data-dir`), and `utils/unzip_data.py` extracts the selected beds and
+plants next to them:
 
 ```
 <modality>/                 rgb, depth, thermal, hsi

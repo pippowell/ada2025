@@ -2,19 +2,22 @@
 Downloads the ADA-2025 dataset from osnaData (Dataverse) into local folders.
 
 The dataset card (doi:10.26249/FK2/DMDLTE) links out to 5 sub-datasets: one per
-camera modality (hsi, thermal, rgb, depth), each holding one archive per bed
-(<modality>_W1.zip, _W2.zip, _W3.zip), plus the environmental sub-dataset
-(sensor parquet files, metadata workbook, leaf scans, plant images). This
-script lists each sub-dataset's files via the Dataverse API and downloads them,
-verifying MD5 checksums against the published metadata.
+camera modality (hsi, thermal, rgb, depth), each holding one archive per plant
+(<modality>_<bed>_<plant>.zip, e.g. hsi_W1_A2.zip; 216 per modality), plus the
+environmental sub-dataset (sensor parquet files, metadata workbook, leaf scans,
+plant images). This script lists each sub-dataset's files via the Dataverse API
+and downloads them, verifying MD5 checksums against the published metadata.
 
 What to download:
     --paper         everything the exemplary analyses of the paper need: the
-                    W1 and W2 archives of all four camera modalities plus the
-                    environmental sub-dataset
+                    paper's five plants (A2 A8 J5 R1 R7) in beds W1 and W2, all
+                    four camera modalities, plus the environmental sub-dataset
     --modalities    which sub-datasets (default: all five)
     --beds          which beds' camera archives (default: all three); the
                     environmental sub-dataset is not split by bed
+    --plants        which plants' camera archives (default: all): grid
+                    positions such as A2 R7, taken from every selected bed,
+                    and/or full IDs such as W2_J5
 
 Everything lands under one --data-dir (default: the repo's data/ folder,
 where unzip_data.py and all analysis scripts look by default; pass the same
@@ -29,6 +32,7 @@ Run from the repository root:
     python utils/download_dataset.py --list-only
     python utils/download_dataset.py --paper
     python utils/download_dataset.py --modalities thermal rgb --beds W1
+    python utils/download_dataset.py --modalities thermal --plants A2 W2_J5
     python utils/download_dataset.py --data-dir path/to/data
 
 Developed with assistance from Claude (Anthropic) via Claude Code.
@@ -65,14 +69,18 @@ SUBDATASETS = {
 BEDS = ["W1", "W2", "W3"]
 
 # What the exemplary analyses in the paper use (see README, "Replicating the
-# Paper Results"): control bed W1 and treatment bed W2, all four cameras, plus
-# the sensor readings.
+# Paper Results"): the four grid corners and the centre of control bed W1 and
+# treatment bed W2, all four cameras, plus the sensor readings.
 PAPER_MODALITIES = ["hsi", "thermal", "rgb", "depth", "environmental"]
 PAPER_BEDS = ["W1", "W2"]
+PAPER_PLANTS = ["A2", "A8", "J5", "R1", "R7"]
 
-# Bed in a camera archive name: "thermal_W2.zip" (one archive per bed) or
-# "W2_A2.zip" (older per-plant archives).
-BED_IN_FILENAME = re.compile(r"(?:^|_)(W\d)(?=[_.])")
+# Plant in a camera archive name (one archive per plant): "hsi_W2_A2.zip" -> W2_A2
+PLANT_IN_FILENAME = re.compile(r"(?:^|_)(W\d_[A-Z]\d+)\.zip$")
+# --plants entries: a grid position (A2) or a full plant ID (W2_A2)
+PLANT_ARG = re.compile(r"^(W\d_)?[A-Z]\d+$")
+# Above this many files per sub-dataset, --list-only sums them up per bed
+LIST_EACH_FILE_MAX = 24
 
 CHUNK_SIZE = 1024 * 1024  # 1 MB
 MAX_ATTEMPTS = 4
@@ -89,10 +97,15 @@ def list_files(doi: str) -> tuple[list[dict], str]:
     return latest["files"], version
 
 
-def bed_of(filename: str) -> str | None:
-    """Bed ID named in a camera archive's filename, or None if it names none."""
-    m = BED_IN_FILENAME.search(filename)
+def plant_of(filename: str) -> str | None:
+    """Full plant ID (e.g. W2_A2) named in a camera archive's filename, or None."""
+    m = PLANT_IN_FILENAME.search(filename)
     return m.group(1) if m else None
+
+
+def plant_selected(plant: str, plants: list[str] | None) -> bool:
+    """Whether a plant ID is selected by --plants (None selects every plant)."""
+    return plants is None or plant in plants or plant.split("_", 1)[1] in plants
 
 
 def md5sum(path: Path) -> str:
@@ -175,9 +188,9 @@ def main():
     )
     parser.add_argument(
         "--paper", action="store_true",
-        help="Download what the paper's exemplary analyses need: the W1 and W2 archives of "
-             "all four camera modalities plus the environmental sub-dataset "
-             "(cannot be combined with --modalities/--beds)",
+        help="Download what the paper's exemplary analyses need: plants A2 A8 J5 R1 R7 of beds W1 "
+             "and W2 in all four camera modalities plus the environmental sub-dataset "
+             "(cannot be combined with --modalities/--beds/--plants)",
     )
     parser.add_argument(
         "--modalities", nargs="+", choices=list(SUBDATASETS),
@@ -186,6 +199,12 @@ def main():
     parser.add_argument(
         "--beds", nargs="+", choices=BEDS,
         help="Which beds' camera archives to download (default: all). "
+             "Does not apply to the environmental sub-dataset",
+    )
+    parser.add_argument(
+        "--plants", nargs="+", metavar="PLANT",
+        help="Which plants' camera archives to download (default: all): grid positions such as "
+             "A2 R7, taken from every selected bed, and/or full IDs such as W2_J5. "
              "Does not apply to the environmental sub-dataset",
     )
     parser.add_argument(
@@ -199,13 +218,17 @@ def main():
     parser.add_argument("-y", "--yes", action="store_true", help="Do not ask for confirmation")
     args = parser.parse_args()
 
-    if args.paper and (args.modalities or args.beds):
-        parser.error("--paper selects modalities and beds itself; drop --modalities/--beds")
+    if args.paper and (args.modalities or args.beds or args.plants):
+        parser.error("--paper selects modalities, beds and plants itself; drop --modalities/--beds/--plants")
     if args.paper:
-        modalities, beds = PAPER_MODALITIES, PAPER_BEDS
+        modalities, beds, plants = PAPER_MODALITIES, PAPER_BEDS, PAPER_PLANTS
     else:
         modalities = args.modalities or list(SUBDATASETS)
         beds = args.beds or BEDS
+        plants = [p.upper() for p in args.plants] if args.plants else None
+        bad = [p for p in plants or [] if not PLANT_ARG.match(p)]
+        if bad:
+            parser.error(f"--plants: not a grid position (A2) or plant ID (W2_A2): {' '.join(bad)}")
 
     output_dir = Path(args.data_dir)
 
@@ -216,22 +239,34 @@ def main():
     print("=" * 62)
     print(f"  Sub-datasets: {' '.join(modalities)}")
     print(f"  Beds (camera archives): {' '.join(beds)}")
+    print(f"  Plants (camera archives): {' '.join(plants) if plants else 'all'}")
     print("-" * 62)
+    found_plants: set[str] = set()
     for mod in modalities:
         cfg = SUBDATASETS[mod]
         files, version = list_files(cfg["doi"])
         if cfg["dest"] == "staged":
-            # Camera archives are split by bed; keep the selected beds' archives
-            # (and anything that names no bed).
-            files = [f for f in files if bed_of(f["dataFile"]["filename"]) in (*beds, None)]
+            # One archive per plant: keep those of the selected beds and plants.
+            files = [f for f in files
+                     if (p := plant_of(f["dataFile"]["filename"]))
+                     and p.split("_", 1)[0] in beds and plant_selected(p, plants)]
+            found_plants |= {plant_of(f["dataFile"]["filename"]) for f in files}
         mod_total = sum(f["dataFile"].get("filesize", 0) or 0 for f in files)
         grand_total += mod_total
-        print(f"  {mod:14s} {len(files):2d} file(s)  {mod_total / 1e9:7.2f} GB   (doi:{cfg['doi']}, {version})")
+        print(f"  {mod:14s} {len(files):3d} file(s)  {mod_total / 1e9:7.2f} GB   (doi:{cfg['doi']}, {version})")
+        if args.list_only and len(files) > LIST_EACH_FILE_MAX:
+            per_bed: dict[str, list[int]] = {}
+            for f in files:
+                n_size = per_bed.setdefault(plant_of(f["dataFile"]["filename"]).split("_", 1)[0], [0, 0])
+                n_size[0] += 1
+                n_size[1] += f["dataFile"].get("filesize", 0) or 0
+            for bed, (n, size) in sorted(per_bed.items()):
+                print(f"      {bed:6s} {n:3d} archive(s) {size / 1e9:8.2f} GB")
         for f in sorted(files, key=lambda f: f["dataFile"]["filename"]):
             df = f["dataFile"]
             filename = df["filename"]
             size = df.get("filesize", 0) or 0
-            if args.list_only:
+            if args.list_only and len(files) <= LIST_EACH_FILE_MAX:
                 size_str = f"{size / 1e9:7.2f} GB" if size >= 1e8 else f"{size / 1e6:7.1f} MB"
                 print(f"      {filename:30s} {size_str}")
             if cfg["dest"] == "staged":
@@ -241,8 +276,14 @@ def main():
             plan.append((mod, filename, df["id"], size,
                          df.get("checksum", {}).get("value"), dest_path))
     print("-" * 62)
-    print(f"  {'TOTAL':14s}    {grand_total / 1e9:7.2f} GB")
+    print(f"  {'TOTAL':14s}     {grand_total / 1e9:7.2f} GB")
     print()
+    if plants and any(SUBDATASETS[m]["dest"] == "staged" for m in modalities):
+        unmatched = [p for p in plants if not any(plant_selected(f, [p]) for f in found_plants)]
+        if unmatched:
+            print(f"  [WARNING] No camera archive found for: {' '.join(unmatched)}. Check that the "
+                  f"plant's bed is selected and that the plant exists (rows A-R, columns 1-8 in a "
+                  f"checkerboard, e.g. A2 or B1; see docs/data_files.md)\n")
 
     if args.list_only:
         return

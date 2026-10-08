@@ -38,13 +38,13 @@ The totals cover August 12 to September 22, all scheduled runs and all re-runs. 
 
 | Sub-dataset | DOI | Files (size) |
 |---|---|---|
-| Hyperspectral | [10.26249/FK2/PK9YDR](https://doi.org/10.26249/FK2/PK9YDR) | `hsi_W1.zip` (57.9 GB), `hsi_W2.zip` (73.8 GB), `hsi_W3.zip` (73.6 GB) |
-| Thermal | [10.26249/FK2/ASL0BV](https://doi.org/10.26249/FK2/ASL0BV) | `thermal_W1.zip` (36.1 GB), `thermal_W2.zip` (39.8 GB), `thermal_W3.zip` (38.2 GB) |
-| RGB | [10.26249/FK2/FGLG94](https://doi.org/10.26249/FK2/FGLG94) | `rgb_W1.zip` (55.1 GB), `rgb_W2.zip` (69.9 GB), `rgb_W3.zip` (69.5 GB) |
-| Depth | [10.26249/FK2/SMHP1Y](https://doi.org/10.26249/FK2/SMHP1Y) | `depth_W1.zip` (31.7 GB), `depth_W2.zip` (36.6 GB), `depth_W3.zip` (36.2 GB) |
+| Hyperspectral | [10.26249/FK2/PK9YDR](https://doi.org/10.26249/FK2/PK9YDR) | 216 archives `hsi_<bed>_<plant>.zip`, 205.3 GB (`W1` 57.9, `W2` 73.8, `W3` 73.6 GB) |
+| Thermal | [10.26249/FK2/ASL0BV](https://doi.org/10.26249/FK2/ASL0BV) | 216 archives `thermal_<bed>_<plant>.zip`, 114.1 GB (`W1` 36.1, `W2` 39.8, `W3` 38.2 GB) |
+| RGB | [10.26249/FK2/FGLG94](https://doi.org/10.26249/FK2/FGLG94) | 216 archives `rgb_<bed>_<plant>.zip`, 194.5 GB (`W1` 55.1, `W2` 69.9, `W3` 69.5 GB) |
+| Depth | [10.26249/FK2/SMHP1Y](https://doi.org/10.26249/FK2/SMHP1Y) | 216 archives `depth_<bed>_<plant>.zip`, 104.5 GB (`W1` 31.7, `W2` 36.6, `W3` 36.2 GB) |
 | Environmental | [10.26249/FK2/C0HOBN](https://doi.org/10.26249/FK2/C0HOBN) | `air_readings.parquet`, `leaf_readings.parquet`, `soil_readings.parquet`, `metadata_rwc_par_en.xlsx` (and the German original `metadata_rwc_par.xlsx`), `Leaf Scans.zip`, `Plant Images.zip` |
 
-The 12 camera archives total 618.4 GB.
+The camera data is split into one archive per modality and plant (e.g. `hsi_W1_A2.zip`): 864 archives of 0.4-1.1 GB each, 618.4 GB in all, or 2.4-3.1 GB per plant for all four cameras.
 
 Once extracted, the camera data is organised as `<modality>/<bed>_<plant>/<YYYY_MM_DD>/<HH>/`, e.g. `thermal/W1_A2/2025_09_01/15/thermal_000.tif`. Every file and column is described in [docs/data_files.md](docs/data_files.md).
 
@@ -75,12 +75,13 @@ All commands below are run from the repository root unless noted otherwise.
 
 ### Downloading and unpacking
 
-> **Check your free disk space first.** The camera archives are large: 30-75 GB each, 618 GB for all twelve, 401 GB for the eight needed to replicate the paper, and each archive holds a whole bed, so there is no smaller download for a few plants. Most laptops do not have room for this in the repository folder. Put the data on an external or secondary drive with `--data-dir` (below), and run `--list-only` first to see what a selection costs. Once the plants you need are extracted, the archives can be deleted; the analysis scripts only read the extracted files.
+> **Check your free disk space first.** The full camera data is 618 GB, more than most laptops have room for. Each archive holds one plant, so select only the modalities, beds and plants you need (about 3 GB per plant for all four cameras; 29 GB for everything the paper uses), or put the data on an external or secondary drive with `--data-dir` (below). Run `--list-only` first to see what a selection costs. Once the plants you need are extracted, the archives can be deleted; the analysis scripts only read the extracted files.
 
 **`utils/download_dataset.py`** downloads the sub-datasets from osnaData and verifies their MD5 checksums. Everything lands in this repo's `data/` folder by default: the camera archives in `data/<modality>/`, the environmental and metadata files directly in `data/`. Files already downloaded intact are skipped, so an interrupted download resumes when you re-run the same command.
 
 - `--modalities` selects sub-datasets (`hsi thermal rgb depth environmental`; default: all)
-- `--beds` selects which beds' camera archives to download (`W1 W2 W3`; default: all); the environmental sub-dataset is not split by bed
+- `--beds` selects which beds' camera archives to download (`W1 W2 W3`; default: all)
+- `--plants` selects which plants' camera archives to download (default: all): grid positions such as `A2 R7`, taken from every selected bed, and/or full plant IDs such as `W2_J5`. Plants are named by row `A`-`R` and column `1`-`8` in a checkerboard pattern (see [docs/data_files.md](docs/data_files.md)). The environmental sub-dataset is split by neither bed nor plant
 - `--paper` downloads exactly what is needed to replicate the paper results (see [Replicating the Paper Results](#replicating-the-paper-results))
 - `--list-only` shows the selected files and sizes without downloading; `-y` skips the confirmation prompt
 - `--data-dir <folder>` puts the data elsewhere, e.g. on an external drive (then pass the same `--data-dir` to the unzip script and every analysis script)
@@ -88,6 +89,7 @@ All commands below are run from the repository root unless noted otherwise.
 ```
 python utils/download_dataset.py --list-only                      # everything, about 620 GB
 python utils/download_dataset.py --modalities environmental thermal --beds W1
+python utils/download_dataset.py --modalities thermal rgb --plants A2 W2_J5   # A2 of every bed, plus W2_J5
 ```
 
 **`utils/unzip_data.py`** extracts the archives next to themselves into the `data/<modality>/<bed>_<plant>/<date>/<hour>/` layout that all scripts read. It asks which modalities, beds and plants to extract (or takes `--modalities`, `--beds`, `--plants`, `-y`), so only what you need is unpacked. Re-running skips files that are already extracted. The archives can also be extracted by hand inside a `<modality>/` folder; their paths start at the plant folder.
@@ -134,14 +136,14 @@ The exemplary analyses in the paper use a small, fixed part of the dataset:
 
 ### 1. Get the data
 
-You need the environmental sub-dataset (1.5 GB) and the `W1` and `W2` archives of all four camera modalities (eight archives, 400.9 GB). `--paper` downloads exactly these. Then extract only the ten analysis plants, which take about 26 GB (all dates and runs of those plants):
+You need the environmental sub-dataset (1.5 GB) and the archives of the ten analysis plants in all four camera modalities (40 archives, 27.4 GB, all dates and runs of those plants). `--paper` downloads exactly these, 29.0 GB in all. Then extract them:
 
 ```
 python utils/download_dataset.py --paper
 python utils/unzip_data.py --modalities thermal hsi rgb depth --beds W1 W2 --plants A2 A8 J5 R1 R7 -y
 ```
 
-Plan for about 430 GB free during download and extraction; after deleting the archives, the extracted plants and the environmental files need about 28 GB. With the data on another drive, add the same `--data-dir <folder>` to both commands above and to every analysis step below that reads the data (Steps 1, 3, 4, 6 and 7, and `make_example_figure.py`). Use an absolute path, since Step 3 and Step 7 are run from their own folders.
+Plan for about 60 GB free during download and extraction; after deleting the camera archives, the extracted plants and the environmental files need about 29 GB. With the data on another drive, add the same `--data-dir <folder>` to both commands above and to every analysis step below that reads the data (Steps 1, 3, 4, 6 and 7, and `make_example_figure.py`). Use an absolute path, since Step 3 and Step 7 are run from their own folders.
 
 Before running the analyses, `data/` must contain the extracted camera data, the parquet files (e.g. `air_readings.parquet`) and the hyperspectral results workbook `results_w5_mean_15_sa.xlsx`. The workbook is tracked in this repository: it is the reference output of Step 3, and Step 4 and the results figure read it by that name. Step 3 can regenerate it on top of the tracked copy, but do not rename it.
 
