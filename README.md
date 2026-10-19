@@ -5,7 +5,7 @@ This is the companion repository of the ADA 2025 dataset ([doi:10.26249/FK2/DMDL
 - tools to download, unpack and check the dataset (`utils/`)
 - documentation of the file formats, the camera calibration and the known data issues (`docs/`)
 - code for working with the data, e.g. fusing depth, RGB and thermal images into 3D point clouds (`analysis/combined/`)
-- the code behind the exemplary analyses in the ADA 2025 dataset paper, with instructions for reproducing its results (`analysis/`, `paper/`)
+- the code behind the exemplary analyses in the ADA 2025 dataset paper ([arXiv:2610.23609](https://arxiv.org/abs/2610.23609)), with instructions for reproducing its results (`analysis/`, `paper/`)
 
 ## The Dataset
 
@@ -272,9 +272,34 @@ The full list of known issues is in [docs/data_notes.md](docs/data_notes.md). Th
 
 - **Camera calibration script** (`align_test.py`) is not included: it only runs on the calibration recordings (bag files) made for this rig, which are not part of the dataset. The parameters it produced are in `analysis/combined/camera_calibration.py`, and the frames, transforms, reprojection errors and how to apply them are documented in [docs/camera_calibration.md](docs/camera_calibration.md).
 
+## Citation
+
+If you use the dataset or this code, please cite the paper and the dataset. The paper is accepted at the 2026 IEEE International Workshop on Metrology for Agriculture and Forestry (MetroAgriFor); until it appears in IEEE Xplore, please cite the arXiv version:
+
+```bibtex
+@misc{powell2026ada2025,
+  author        = {Powell, Piper and Franz, Robert and Smith, Amos and Ihorst, Isaak and Hertzberg, Joachim and Atzmueller, Martin},
+  title         = {{ADA} 2025: A Multimodal Dataset for Water-Deficit Stress Detection in Sugar Beets},
+  year          = {2026},
+  eprint        = {2610.23609},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CV},
+  doi           = {10.48550/arXiv.2610.23609},
+  note          = {Accepted at the 2026 IEEE International Workshop on Metrology for Agriculture and Forestry (MetroAgriFor)}
+}
+
+@misc{powell2026ada2025data,
+  author    = {Powell, Piper and Franz, Robert and Smith, Amos and Ihorst, Isaak},
+  title     = {{ADA} 2025: A Multimodal Dataset for Water-Deficit Stress Detection in Sugar Beets},
+  publisher = {osnaData},
+  year      = {2026},
+  doi       = {10.26249/FK2/DMDLTE}
+}
+```
+
 ## AI Assistance
 
-The code in this repository was developed with assistance from Claude (Anthropic) via Claude Code, and reviewed and checked by the authors. Each source file carries a note to that effect.
+AI tools (Claude, GitHub Copilot) were used to assist with analysis code and reporting, figure and table generation, and minor revisions to the text. All code and content was reviewed and checked by the authors.
 
 ## License
 
