@@ -299,7 +299,7 @@ If you use the dataset or this code, please cite the paper and the dataset. The 
 
 ## AI Assistance
 
-AI tools (Claude, GitHub Copilot) were used to assist with analysis code and reporting, figure and table generation, and minor revisions to the text. All code and content was reviewed and checked by the authors.
+The code in this repository was developed with assistance from AI tools (Claude, GitHub Copilot). All functionalities were reviewed and checked by the authors.
 
 ## License
 
