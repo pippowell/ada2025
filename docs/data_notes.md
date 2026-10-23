@@ -91,6 +91,18 @@ meaning and, where available, how often each occurs per modality.
 
 ### Manual labels
 
+A subset of the dataset was manually reviewed for image-quality and
+acquisition issues: eight plants, four in `W1` (`W1_B5`, `W1_E4`, `W1_G6`,
+`W1_K6`) and four in `W2` (`W2_B3`, `W2_G2`, `W2_I6`, `W2_Q6`); no `W3`
+plant was reviewed. The review covers 1,860 plant/date/hour records from
+2025-08-11 to 2025-09-22 and was carried out by the authors. Flags describe
+individual frames or derived images (HSI index images, 3D views). `Missing`
+is the exception: it marks a modality that is entirely absent for that run.
+The labels are in
+[`manually_checked_data.json`](../analysis/dataset_issues/manually_checked_data.json);
+the schema and label counts are in
+[`manually_checked_data_description.md`](../analysis/dataset_issues/manually_checked_data_description.md).
+
 | Label | Modality | Meaning |
 |---|---|---|
 | *TODO* | | |
