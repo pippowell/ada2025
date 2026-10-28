@@ -105,19 +105,27 @@ the schema and label counts are in
 
 | Label | Modality | Meaning |
 |---|---|---|
-| *TODO* | | |
+| `Missing` | RGB, Depth, Thermal, HSI, 3D | A modality is missing |
+| `Medium Dark` | RGB, HSI, 3D | Moderately dark image/view |
+| `Dark` | RGB, HSI, 3D | Image/view is dark|
+| `Medium Bright` | RGB, HSI | Moderately bright image/view |
+| `Bright` | RGB | Image is bright |
+| `Medium Blurred` | RGB, Thermal, HSI, 3D | Moderately blurred image/view |
+| `Blurred` | RGB, Thermal, HSI | Blurred image/view |
+| `Not Centered` | RGB, Depth, Thermal, 3D | Plant is not centered in frame/view|
+| `Artifact` | RGB, Depth, Thermal, HSI, 3D | Image/view contains an artifact |
+| `Medium Artifact` | RGB, Depth, HSI, 3D | Image/view contains a moderate artifact|
+| `water hose` | Depth | Water hose visible in the acquisition |
+| `Offset` | 3D | 3D view is offset/misaligned |
+| `no plant` | Thermal | No plant visible in the image |
 
-## Example series
+## Example quality labels
 
-One example image per issue label. **TODO (team):** add one image per row
-(save under `docs/images/data_notes/` and replace the placeholder), and add a
-row for every label in the tables above.
+| Issue | Modality | Image |
+|---|---|---|
+| Dark (early/late run) | RGB | ![rgb_dark](images/data_notes/rgb_dark.png) |
+| Bright | RGB | ![rgb_bright](images/data_notes/rgb_bright.png) |
+| Artifact (image tear) | RGB | ![rgb_artifact](images/data_notes/rgb_artifact.png) |
+| Dark (early/late run) | HSI | ![hsi_dark](images/data_notes/hsi_dark.png) |
+| Artifact | HSI | ![hsi_artifact](images/data_notes/hsi_artifact.png) |
 
-| Issue | Modality | Example (plant/date/hour/file) | Image |
-|---|---|---|---|
-| Dark (early/late run) | RGB | *TODO* | *placeholder* |
-| Dark (early/late run) | HSI | *TODO* | *placeholder* |
-| HSI overexposure | HSI | *TODO* | *placeholder* |
-| Missing thermal | thermal | e.g. `W1_A2/2025_09_07/06` (RGB, depth and HSI present, no thermal) | *placeholder* |
-| Missing depth | depth | e.g. `W1_A2/2025_09_20/12` (RGB, thermal and HSI present, no depth) | *placeholder* |
-| Position offset | 3D fusion | *TODO* | *placeholder* |
