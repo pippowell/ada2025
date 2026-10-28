@@ -270,7 +270,7 @@ The full list of known issues is in [docs/data_notes.md](docs/data_notes.md). Th
 
 ## Known Gaps
 
-- **Camera calibration script** (`align_test.py`) is not included: it only runs on the calibration recordings (bag files) made for this rig, which are not part of the dataset. The parameters it produced are in `analysis/combined/camera_calibration.py`, and the frames, transforms, reprojection errors and how to apply them are documented in [docs/camera_calibration.md](docs/camera_calibration.md).
+- **Camera calibration script** is not included: it only runs on the calibration recordings (bag files) made for this rig, which are not part of the dataset. The parameters it produced are in `analysis/combined/camera_calibration.py`, and the frames, transforms, reprojection errors and how to apply them are documented in [docs/camera_calibration.md](docs/camera_calibration.md).
 
 ## Citation
 
