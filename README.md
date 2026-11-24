@@ -9,10 +9,11 @@ This is the companion repository of the ADA 2025 dataset ([doi:10.26249/FK2/DMDL
 
 ## The Dataset
 
-ADA 2025 is a multimodal dataset of 216 greenhouse-grown sugar beet plants (*Beta vulgaris* ssp. *vulgaris* var. *altissima*, variety CALLEDIA KWS Öko) under healthy and water-deficit conditions. It combines hyperspectral, thermal, RGB and depth imagery with environmental sensor data, leaf-thickness (turgor) and relative water content (RWC) ground truth, and manual plant observations. The camera data alone is over 600 GB.
+ADA 2025 is a multimodal dataset of 216 sugar beet plants (*Beta vulgaris* ssp. *vulgaris* var. *altissima*, variety CALLEDIA KWS Öko), grown under semi-field conditions in a side-ventilated polytunnel, under healthy and water-deficit conditions. It combines hyperspectral, thermal, RGB and depth imagery with environmental sensor data (air temperature, humidity and pressure, and photosynthetically active radiation, PAR), leaf-thickness (turgor) and relative water content (RWC) ground truth, and manual plant observations. The camera data alone is over 600 GB.
 
 ### Experiment
 
+- **Setting.** The plants were grown in a polytunnel (German *Folientunnel*) at the AI Market Garden of the German Research Center for Artificial Intelligence (DFKI) in Bohmte, Lower Saxony, Germany, during the 2025 growing season. This was not a greenhouse: the tunnel has side ventilation and no heating, cooling or supplemental lighting, so the plants grew in natural daylight and close to outside air temperature and humidity (semi-field conditions). A PAR sensor and two air sensors logged the light and air conditions throughout (see Contents). An external advisor with agronomic expertise advised on the plant side of the experiment (cultivation, BBCH estimates and symptom observations).
 - **Plants and beds.** The plants were seeded on August 4, 2025, in individual pots, and arranged in a checkerboard pattern in three beds of 72 plants each (`W1`, `W2`, `W3`; 2 m x 1 m). Plants are named by bed and grid position, e.g. `W2_J5` (row `A`-`R`, column `1`-`8`).
 - **Treatment.** `W1` is the control bed and was fully watered throughout. Irrigation of the two water-deficit beds `W2` and `W3` was turned off on September 3 (last watering at 11:00, at about BBCH 14) and resumed on September 15 to assess recovery.
 - **Acquisition.** The ADA robot (a modified FarmBot Genesis carrying all four cameras) flew over all three beds five times a day, at 06, 09, 12, 15 and 18 h, from August 12 (emergence) to September 22, 2025, taking top-down images of every plant. Failed runs were often re-run shortly afterwards.
@@ -105,9 +106,12 @@ python utils/unzip_data.py --modalities thermal --beds W1 W2 --plants all -y
 
 **`utils/camera_data_summary.py`** counts the extracted camera images per modality over the collection period (Aug 12 - Sep 22 by default, all runs including re-runs) and reports the share of planned camera data that is missing. With all four modalities and all 216 plants extracted, it reproduces the totals above and the 6.44 % missing figure.
 
+**`utils/check_robot_positions.py`** reads the downloaded camera archives (no extraction needed) and flags frames taken off position, duplicated captures from stalled runs, runs without a position file, and hyperspectral scans outside the collection period. The result for the full dataset is in `analysis/dataset_issues/robot_position_flags.csv`; see [docs/data_notes.md](docs/data_notes.md#robot-position-data).
+
 ```
 python utils/sensor_summary.py
 python utils/camera_data_summary.py
+python utils/check_robot_positions.py
 ```
 
 ### 3D fusion of depth, RGB and thermal
