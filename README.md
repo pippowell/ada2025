@@ -32,7 +32,7 @@ ADA 2025 is a multimodal dataset of 216 sugar beet plants (*Beta vulgaris* ssp. 
 |---|---|---|
 | Air temperature, humidity, pressure (2 x BME280) | 2 min | 59,648 |
 | Leaf thickness / turgor (21 AgriHouse clips) | 2 min | 294,247 |
-| Soil temperature and moisture (4 sensors, `W2`; not usable, see below) | 2 min | 119,292 |
+| Soil temperature and moisture (4 sensors, `W2`; use with caution, see below) | 2 min | 119,292 |
 | PAR (Driesen sensor, raw mV) | 15 min | 4,484 |
 
 The totals cover August 12 to September 22, all scheduled runs and all re-runs. The dataset card links to five sub-datasets on osnaData:
@@ -265,7 +265,7 @@ The full list of known issues is in [docs/data_notes.md](docs/data_notes.md). Th
 - **Depth TIFFs have two pages**: page 0 is depth in meters (float32), page 1 the NIR intensity (uint16). Thermal TIFFs hold temperature in °C (float32).
 - **Turgor readings are inverted**: a higher `turgic_value` means lower turgor, i.e. more water-deficit stress. The values are raw sensor units, and the clips were attached on September 2.
 - **PAR is raw** sensor output in mV, without conversion to µmol m⁻² s⁻¹.
-- **Soil readings are not usable.** The soil sensors proved unsuitable for the deployment conditions; the file is included for completeness.
+- **Use the soil readings with caution.** The soil sensors proved unsuitable for the deployment conditions.
 
 **Metadata and ground truth**
 - **RWC samples come from `W3` only.** Each plant was sampled once: one leaf from each of eight plants per sampling day, except on day 12 (September 15), when seven plants gave two leaves each (`<plant>_1` the smallest fully extended leaf, `<plant>_2` the next youngest). The plants and dates are in the RWC sheet. Sampled plants have no BBCH estimate after their sampling date, so keep this in mind when using `W3` imagery from September 4 on. The `rwc` column is empty: compute RWC = (fw - dw) / (sw - dw).
